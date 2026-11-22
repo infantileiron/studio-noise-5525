@@ -2,7 +2,7 @@ from fastapi import APIRouter, Response
 
 from src.controllers.accounts import Reader, Reviewer, Writer, login
 from src.schemas import input as forms
-from src.services import catalog, diagnostics
+from src.services import catalog, corrections, diagnostics
 
 router = APIRouter()
 
@@ -35,6 +35,16 @@ def list_readings(_: Reader, session_id: int | None = None):
 @router.post('/readings', status_code=201)
 def create_reading(data: forms.Reading, account: Writer):
     return catalog.add_reading(data.model_dump(mode='json'), account)
+
+
+@router.get('/corrections')
+def list_corrections(_: Reader, session_id: int | None = None):
+    return corrections.recent(session_id)
+
+
+@router.post('/corrections', status_code=201)
+def create_correction(data: forms.Correction, account: Writer):
+    return corrections.create(data.model_dump(mode='json'), account)
 
 
 @router.get('/methods')
@@ -72,3 +82,15 @@ def download(identifier: int, account: Reader):
     filename, document = diagnostics.export(identifier, account)
     return Response(document, media_type='application/json',
                     headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+
+
+@router.get('/diagnostics/{identifier}/runs/{revision}/export')
+def download_run(identifier: int, revision: int, account: Reader):
+    filename, document = diagnostics.export_run(identifier, revision, account)
+    return Response(document, media_type='application/json',
+                    headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+
+
+@router.post('/diagnostics/{identifier}/runs/{revision}/recheck')
+def recheck_run(identifier: int, revision: int, account: Reader):
+    return diagnostics.recheck(identifier, revision, account)

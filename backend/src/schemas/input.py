@@ -66,5 +66,18 @@ class Diagnostic(Input):
         return self
 
 
+class Correction(Input):
+    reading_id: int = Field(gt=0)
+    noise: float | None = Field(default=None, ge=0, le=140, multiple_of=0.01)
+    traffic: int | None = Field(default=None, ge=0, le=1000)
+    reason: str = Field(min_length=4, max_length=350)
+
+    @model_validator(mode='after')
+    def any_change(self):
+        if self.noise is None and self.traffic is None:
+            raise ValueError('至少补正 LAeq 或车流中一项')
+        return self
+
+
 class Decision(Input):
     text: str = Field(min_length=8, max_length=500)

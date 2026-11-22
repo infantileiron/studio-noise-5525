@@ -5,6 +5,8 @@ export const position = {booth: '录音位', street: '临街墙', door: '隔声�
 export const predictor = {traffic: '同步车流', hvac: '风机档位'};
 export const controls = {band: '工作时带', hvac: '风机档位', position: '测点位置', session: '具体录音时段'};
 export const phase = {queued: '等待计算', complete: '计算完成', blocked: '计算阻断', failed: '运行失败'};
+export const arrangement = {active: '生效中', withdrawn: '已撤下'};
+export const direction = {1: '正相关', 0: '零相关', '-1': '负相关'};
 export const warnings = {
   TOO_FEW_ROWS: '配对声测少于 4 条，请加入更多实测时段。',
   RANK_DEFICIENT: '控制矩阵秩亏。具体时段已经包含工作时带信息，请减少重复控制。',

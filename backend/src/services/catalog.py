@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from pymysql.err import IntegrityError
 
 from src.config.runtime import database
-from src.models.studio import METHOD_COLUMNS, READING_SELECT, audit, decode_json
+from src.models.studio import METHOD_COLUMNS, READING_LIST, READING_SELECT, audit, decode_json
 from src.utils.documents import encode
 
 
@@ -28,9 +28,9 @@ def add_session(data, account):
 def readings(session_id):
     with database() as cursor:
         if session_id is None:
-            cursor.execute(READING_SELECT + ' ORDER BY r.id DESC LIMIT 4000')
+            cursor.execute(READING_LIST + ' ORDER BY r.id DESC LIMIT 4000')
         else:
-            cursor.execute(READING_SELECT + ' WHERE r.session_id=%s ORDER BY r.id DESC LIMIT 4000', (session_id,))
+            cursor.execute(READING_LIST + ' WHERE r.session_id=%s ORDER BY r.id DESC LIMIT 4000', (session_id,))
         return cursor.fetchall()
 
 

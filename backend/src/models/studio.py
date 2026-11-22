@@ -4,9 +4,14 @@ import json
 READING_SELECT = """SELECT r.id, r.session_id, s.code, s.band, r.reference, r.hvac,
                     r.position, CAST(r.noise AS DOUBLE) AS noise, r.traffic, r.note
                     FROM readings r JOIN sessions s ON s.id=r.session_id"""
+READING_LIST = """SELECT r.id, r.session_id, s.code, s.band, r.reference, r.hvac,
+                  r.position, CAST(r.noise AS DOUBLE) AS noise, r.traffic, r.note,
+                  (SELECT COUNT(*) FROM corrections c WHERE c.reading_id=r.id) AS correction_count
+                  FROM readings r JOIN sessions s ON s.id=r.session_id"""
 METHOD_COLUMNS = 'id, version, title, predictor, controls, note'
 RUN_COLUMNS = """d.id, d.title, d.method_id, m.version, m.predictor, d.state, d.fingerprint,
                  d.result, d.decision, d.created_at, d.finished_at, d.reviewed_at,
+                 d.revision, d.basis_revision, d.arrangement, d.withdrawn_at, d.withdraw_note,
                  a.email AS owner, reviewer.email AS reviewer"""
 RUN_FROM = """FROM diagnostics d JOIN methods m ON d.method_id=m.id
               JOIN accounts a ON d.owner_id=a.id LEFT JOIN accounts reviewer ON d.reviewer_id=reviewer.id"""

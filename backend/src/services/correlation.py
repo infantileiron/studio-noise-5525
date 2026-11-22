@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.constants.labels import HVAC_RANK
+from src.services.directions import consistent, sign
 
 ALGORITHM = 'residual-pearson-v1'
 
@@ -76,3 +77,22 @@ def calculate(snapshot):
     result['partial'] = partial
     result['absolute_drop'] = abs(raw) - abs(partial)
     return 'complete', result
+
+
+def leave_one_out(snapshot):
+    """逐个剔除时段后按同一口径重算，报告剔除每个时段后的方向。"""
+    outcomes = []
+    for session in snapshot['sessions']:
+        reduced = {**snapshot, 'readings': [row for row in snapshot['readings']
+                                            if row['session_id'] != session['id']]}
+        state, result = calculate(reduced)
+        outcomes.append({'session_id': session['id'], 'code': session['code'],
+                         'state': state, 'direction': sign(result.get('partial'))})
+    return outcomes
+
+
+def assemble(reference, state, partial, leave_out):
+    """汇总全样本与逐个剔除时段的方向，核对是否都和参照（原诊断）方向一致。"""
+    full = sign(partial) if state == 'complete' else None
+    return {'reference': reference, 'full': full, 'leave_out': leave_out,
+            'consistent': consistent(reference, full, [item['direction'] for item in leave_out])}

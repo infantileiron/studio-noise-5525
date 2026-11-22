@@ -37,4 +37,9 @@ class Control(StrEnum):
     session = 'session'
 
 
+class Arrangement(StrEnum):
+    active = 'active'
+    withdrawn = 'withdrawn'
+
+
 HVAC_RANK = {setting.value: rank for rank, setting in enumerate(HVAC)}

@@ -88,7 +88,7 @@ app.addEventListener('submit', async event => {
       const body = payload[resource](form);
       if (resource === 'diagnostics' && !body.session_ids.length) throw new Error('至少选择一个时段');
       const record = await request('/' + resource, {body});
-      notice = {sessions:'录音时段已保存。', readings:'声测已保存。', methods:'变量版本已保存。', diagnostics:'诊断已提交。'}[resource];
+      notice = {sessions:'录音时段已保存。', readings:'声测已保存。', methods:'变量版本已保存。', diagnostics:'诊断已提交。', corrections:'补正已入账，受影响的诊断已排队重算。'}[resource];
       await refresh();
       if (resource === 'diagnostics') { window.location.hash = `diagnostics/${record.id}`; return; }
       await show();
@@ -108,6 +108,12 @@ app.addEventListener('submit', async event => {
 
 app.addEventListener('change', event => {
   if (event.target.matches('[name=filter]')) { state.filter = event.target.value; render(); }
+  if (event.target.matches('[name=reading_id]')) {
+    const hint = event.target.form.querySelector('[data-current]');
+    const reading = state.readings.find(row => row.id === Number(event.target.value));
+    hint.hidden = !reading;
+    if (reading) hint.textContent = `当前 LAeq ${Number(reading.noise).toFixed(2)} dB(A)，车流 ${reading.traffic} 辆；补正后原值留存在台账。`;
+  }
   if (event.target.matches('[name=predictor]')) {
     for (const option of event.target.form.querySelectorAll('[name=controls]')) {
       option.disabled = option.value === event.target.value;
@@ -116,7 +122,7 @@ app.addEventListener('change', event => {
   }
 });
 app.addEventListener('click', async event => {
-  const element = event.target.closest('[data-demo],[data-filter],[data-logout],[data-download],[data-retry]');
+  const element = event.target.closest('[data-demo],[data-filter],[data-logout],[data-download],[data-retry],[data-recheck],[data-run-export]');
   if (!element) return;
   if (element.dataset.demo) {
     const form = app.querySelector('form');
@@ -130,6 +136,17 @@ app.addEventListener('click', async event => {
   if (element.hasAttribute('data-download')) {
     try { await save(await request(`/diagnostics/${state.detail.id}/export`, {raw: true})); }
     catch (error) { notice = error.message; render(); }
+  }
+  if (element.dataset.runExport !== undefined) {
+    try { await save(await request(`/diagnostics/${state.detail.id}/runs/${element.dataset.runExport}/export`, {raw: true})); }
+    catch (error) { notice = error.message; render(); }
+  }
+  if (element.dataset.recheck !== undefined) {
+    try {
+      const result = await request(`/diagnostics/${state.detail.id}/runs/${element.dataset.recheck}/recheck`, {body: {}});
+      notice = result.match ? `r${result.revision} 复算一致，旧结果可复现。` : `r${result.revision} 复算不一致，请核查计算环境。`;
+      render();
+    } catch (error) { notice = error.message; render(); }
   }
 });
 window.addEventListener('hashchange', () => { notice = ''; show(); window.scrollTo(0, 0); });

@@ -1,5 +1,17 @@
-import {band, controls, predictor, warnings} from '../constants/labels.js';
+import {band, controls, direction, predictor, warnings} from '../constants/labels.js';
 import {esc, signed} from '../utils/format.js';
+
+const directionName = value => value == null ? '不可算' : direction[value];
+
+function directionsBlock(directions) {
+  if (!directions) return '';
+  const items = directions.leave_out.map(item => `${esc(item.code)}：${directionName(item.direction)}`).join('；');
+  const verdict = directions.consistent === true ? '各项方向与原诊断一致。'
+    : directions.consistent === false ? '存在方向翻转或不可计算。' : '缺少参照方向，未判定一致性。';
+  return `<div class="directions"><h3>补正后方向核对</h3>
+    <p>原诊断方向：${directionName(directions.reference)}；全样本：${directionName(directions.full)}。</p>
+    <p>逐个剔除时段：${items}</p><p class="notice">${verdict}</p></div>`;
+}
 
 export function resultPanel(run) {
   const result = run.result;
@@ -14,10 +26,10 @@ export function resultPanel(run) {
     <div><span>原始 Pearson r</span><strong data-coef="raw">${signed(result.raw)}</strong></div>
     <div><span>残差偏相关 r</span><strong data-coef="partial">${signed(result.partial)}</strong></div>
     <div><span>配对样本</span><strong>${result.n}<small> 条</small></strong></div>
-    </div><p class="interpretation">${summary}</p>${result.warnings.map(code => `<p class="notice" data-warning="${code}">${warnings[code]}</p>`).join('')}
+    </div><p class="interpretation">${summary}</p>${directionsBlock(result.directions)}${result.warnings.map(code => `<p class="notice" data-warning="${code}">${warnings[code]}</p>`).join('')}
     ${result.rows.length ? charts : ''}
     ${result.rows.length ? `<div class="legend">${Object.entries(band).map(([key,label]) => `<span><i class="${key}"></i>${label}</span>`).join('')}</div>` : ''}
-    <dl class="metadata"><div><dt>解释量</dt><dd>${predictor[run.predictor]}</dd></div><div><dt>控制组</dt><dd>${Object.keys(result.levels).map(key => controls[key]).join('、') || '无'}</dd></div><div><dt>矩阵秩／列数</dt><dd data-rank>${result.rank} / ${result.columns.length}</dd></div><div><dt>残差自由度</dt><dd>${result.df ?? '—'}</dd></div><div class="digest"><dt>样本指纹</dt><dd class="mono">${esc(run.fingerprint)}</dd></div></dl></div>`;
+    <dl class="metadata"><div><dt>解释量</dt><dd>${predictor[run.predictor]}</dd></div><div><dt>控制组</dt><dd>${Object.keys(result.levels).map(key => controls[key]).join('、') || '无'}</dd></div><div><dt>矩阵秩／列数</dt><dd data-rank>${result.rank} / ${result.columns.length}</dd></div><div><dt>残差自由度</dt><dd>${result.df ?? '—'}</dd></div><div><dt>数据版本</dt><dd>r${run.revision}</dd></div><div class="digest"><dt>样本指纹</dt><dd class="mono">${esc(run.fingerprint)}</dd></div></dl></div>`;
 }
 
 export function drawPlots(run) {
